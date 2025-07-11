@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>写真を撮って送信</title>
+</head>
+<body>
+  <video id="video" width="320" height="240" autoplay></video>
+  <button id="capture">撮影</button>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <form id="upload-form" enctype="multipart/form-data">
+    <input type="file" id="fileinput" name="image" style="display:none;">
+    <button type="submit">サーバーへ送信</button>
+  </form>
+  <script>
+    // カメラ起動
+    const video = document.getElementById('video');
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; });
+
+    // 撮影
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('capture');
+    captureBtn.onclick = function() {
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      // canvasの画像をBlobにしてinputへセット
+      canvas.toBlob(function(blob) {
+        const file = new File([blob], "photo.jpg", {type: "image/jpeg"});
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        document.getElementById('fileinput').files = dataTransfer.files;
+      }, 'image/jpeg');
+    };
+
+    // 送信
+    document.getElementById('upload-form').onsubmit = function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      }).then(res => res.text())
+        .then(data => alert(data));
+    };
+  </script>
+</body>
+</html>
